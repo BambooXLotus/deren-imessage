@@ -1,20 +1,29 @@
-import { type AppType } from "next/app";
-import { type Session } from "next-auth";
-import { SessionProvider } from "next-auth/react";
+import '@/styles/globals.css'
 
-import { api } from "../utils/api";
+import {ChakraProvider} from '@chakra-ui/react'
+import {SessionProvider} from 'next-auth/react'
 
-import "../styles/globals.css";
+import {theme} from '../chakra/theme'
+import {api} from '../utils/api'
 
-const MyApp: AppType<{ session: Session | null }> = ({
+import type {Session} from 'next-auth'
+import type {AppType} from 'next/app'
+import {ApolloProvider} from '@apollo/client/react'
+import {client} from '@/graphql/apollo-client'
+
+const MyApp: AppType<{session: Session | null}> = ({
   Component,
-  pageProps: { session, ...pageProps },
+  pageProps: {session, ...pageProps},
 }) => {
   return (
-    <SessionProvider session={session}>
-      <Component {...pageProps} />
-    </SessionProvider>
-  );
-};
+    <ApolloProvider client={client}>
+      <SessionProvider session={session}>
+        <ChakraProvider theme={theme}>
+          <Component {...pageProps} />
+        </ChakraProvider>
+      </SessionProvider>
+    </ApolloProvider>
+  )
+}
 
-export default api.withTRPC(MyApp);
+export default api.withTRPC(MyApp)

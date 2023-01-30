@@ -1,10 +1,13 @@
+import UserOperations from '@/graphql/operations/user'
+import {useMutation} from '@apollo/client'
 import {Button, Center, Input, Stack, Text} from '@chakra-ui/react'
-import type {Session} from 'next-auth'
 import {signIn} from 'next-auth/react'
 import Image from 'next/image'
-
-import deren128 from '@/images/deren-128.png'
 import {useState} from 'react'
+import toast from 'react-hot-toast'
+
+import type {Session} from 'next-auth'
+import type {CreateUsernameData, CreateusernameVariables} from '@/graphql/types/user'
 
 type AuthProps = {
   session: Session | null
@@ -14,27 +17,51 @@ type AuthProps = {
 const Auth: React.FC<AuthProps> = ({session, reloadSession}) => {
   const [username, setUsername] = useState('')
 
-  function saveUsernameHandler() {
+  const [createUsername] = useMutation<CreateUsernameData, CreateusernameVariables>(
+    UserOperations.Mutations.createUsername
+  )
+
+  async function saveUsernameHandler() {
+    if (!username) return
+
     try {
-      // createUsername mutation to send our username to the GraphQL API
-    } catch (error) {
-      console.log(error)
+      const {data} = await createUsername({
+        variables: {
+          username,
+        },
+      })
+
+      if (!data?.createUsername) {
+        throw new Error()
+      }
+
+      if (data.createUsername.error) {
+        const {
+          createUsername: {error},
+        } = data
+
+        throw new Error(error)
+      }
+
+      toast.success('Username created!')
+      reloadSession()
+    } catch (error: any) {
+      toast.error(error?.message)
     }
   }
 
   return (
     <Center height="100vh">
       <Stack align="center" spacing={8}>
-        <Image
-          className="rounded-full"
-          src={deren128.src}
-          width={256}
-          height={256}
-          alt="Deren iMessage"
-        ></Image>
-
         {session ? (
           <>
+            <Image
+              className="rounded-full"
+              src={session?.user.image}
+              width={128}
+              height={128}
+              alt="Deren iMessage"
+            ></Image>
             <Text fontSize="3xl">Create Username</Text>
             <Input
               placeholder="Enter a Username"

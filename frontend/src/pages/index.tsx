@@ -24,10 +24,10 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main>
-        <AuthShowcase />
+        {/* <AuthShowcase /> */}
         <Box>
           {sessionData?.user?.username ? (
-            <Chat />
+            <Chat session={sessionData} />
           ) : (
             <Auth session={sessionData} reloadSession={reloadSession} />
           )}

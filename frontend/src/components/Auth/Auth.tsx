@@ -17,7 +17,7 @@ type AuthProps = {
 const Auth: React.FC<AuthProps> = ({session, reloadSession}) => {
   const [username, setUsername] = useState('')
 
-  const [createUsername] = useMutation<CreateUsernameData, CreateusernameVariables>(
+  const [createUsername, {loading}] = useMutation<CreateUsernameData, CreateusernameVariables>(
     UserOperations.Mutations.createUsername
   )
 
@@ -73,7 +73,7 @@ const Auth: React.FC<AuthProps> = ({session, reloadSession}) => {
         ) : (
           <>
             <Text fontSize="3xl">Deren iMessage</Text>
-            <Button className="w-100" onClick={() => void signIn()}>
+            <Button className="w-full" onClick={() => void signIn()} isLoading={loading}>
               Sign In
             </Button>
           </>

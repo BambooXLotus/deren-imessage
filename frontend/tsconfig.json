@@ -20,7 +20,8 @@
       "@/components/*": ["src/components/*"],
       "@/styles/*": ["scr/styles/*"],
       "@/images/*": ["public/images/*"],
-      "@/graphql/*": ["src/graphql/*"]
+      "@/graphql/*": ["src/graphql/*"],
+      "@/utils/*": ["src/utils/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.cjs", "**/*.mjs"],

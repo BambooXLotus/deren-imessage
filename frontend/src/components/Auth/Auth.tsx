@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 
 import type {Session} from 'next-auth'
 import type {CreateUsernameData, CreateusernameVariables} from '@/graphql/types/user'
+import {getErrorMessage, reportError} from '@/utils/ErrorHelper'
 
 type AuthProps = {
   session: Session | null
@@ -45,8 +46,11 @@ const Auth: React.FC<AuthProps> = ({session, reloadSession}) => {
 
       toast.success('Username created!')
       reloadSession()
-    } catch (error: any) {
-      toast.error(error?.message)
+    } catch (error) {
+      const message = getErrorMessage(error)
+      reportError({message})
+
+      toast.error(message)
     }
   }
 

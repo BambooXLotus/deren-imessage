@@ -10,6 +10,7 @@ import type {ConversationsData} from '@/graphql/types/conversation'
 import type {ConversationPopulated} from '../../../../../backend/src/types/conversation'
 import {useEffect} from 'react'
 import {useRouter} from 'next/router'
+import SkeletonLoader from '@/components/common/SkeletonLoader'
 
 type ConverationsWrapperProps = {
   session: Session
@@ -61,20 +62,24 @@ const ConverationsWrapper: React.FC<ConverationsWrapperProps> = ({session}) => {
 
   useEffect(() => {
     subscribeToNewConversations()
-  })
+  }, [])
 
   return (
     <Box
-      className="w-full py-6 px-3 md:w-96"
+      className="w-full gap-4 py-6 px-3 md:w-96"
+      flexDirection="column"
       bg="whiteAlpha.50"
       display={{base: conversationId ? 'none' : 'flex', md: 'flex'}}
     >
-      {/* Skeleton Loader */}
-      <ConversationList
-        session={session}
-        conversations={conversationsData?.conversations || []}
-        onViewConversation={handleViewConversation}
-      />
+      {conversationsLoading ? (
+        <SkeletonLoader count={4} height="80px" />
+      ) : (
+        <ConversationList
+          session={session}
+          conversations={conversationsData?.conversations || []}
+          onViewConversation={handleViewConversation}
+        />
+      )}
     </Box>
   )
 }

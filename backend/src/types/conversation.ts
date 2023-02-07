@@ -1,4 +1,4 @@
-import { conversationUsersPopulated } from './../graphql/resolvers/conversation';
+import type { conversationUsersPopulated } from './../graphql/resolvers/conversation';
 import { Prisma } from '@prisma/client';
 
 import type { conversationPopulated } from '../graphql/resolvers/conversation';

@@ -1,20 +1,12 @@
 import {formatUsernames} from '@/utils/functions'
 import {Avatar, Box, Flex, Menu, MenuItem, MenuList, Stack, Text} from '@chakra-ui/react'
-import {formatRelative, parseISO} from 'date-fns'
-import {enUS} from 'date-fns/locale'
 import {useState} from 'react'
 import {AiOutlineEdit} from 'react-icons/ai'
 import {BiLogOut} from 'react-icons/bi'
 import {MdDeleteOutline} from 'react-icons/md'
 
 import type {ConversationPopulated} from '../../../../../backend/src/types/conversation'
-
-const formatRelativeLocale = {
-  lastWeek: 'eeee',
-  yesterday: "'Yesterday",
-  today: 'p',
-  other: 'MM/dd/yy',
-}
+import TimeAgo from 'react-timeago'
 
 type ConversationItemProps = {
   userId: string
@@ -96,7 +88,9 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       {conversation.latestMessage ? (
         <Avatar src={conversation.latestMessage.sender.image as string} />
       ) : (
-        <Avatar src={conversation.users[0]?.user.image as string} />
+        <Avatar
+          src={conversation.users.filter((user) => user.id === userId)[0]?.user.image as string}
+        />
       )}
       <Flex className="flex-col" width="80%" height="100%">
         <Flex direction="column" width="70%" height="100%">
@@ -117,13 +111,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           )}
         </Flex>
         <Text className="text-xs" color="whiteAlpha.700">
-          {formatRelative(parseISO(conversation.updatedAt.toString()), new Date(), {
-            locale: {
-              ...enUS,
-              formatRelative: (token) =>
-                formatRelativeLocale[token as keyof typeof formatRelativeLocale],
-            },
-          })}
+          {/* {getChatDate(conversation.updatedAt)} */}
+          <TimeAgo date={conversation.updatedAt}></TimeAgo>
         </Text>
       </Flex>
     </Stack>

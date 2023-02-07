@@ -22,7 +22,10 @@ import Group from './Group'
 import UserSearchList from './UserSearchList'
 
 import type {SearchedUser, SearchUsersData, SearchUsersInput} from '@/graphql/types/user'
-import type {CreateConversationData, CreateConversationInput} from '@/graphql/types/conversation'
+import type {
+  CreateConversationData,
+  CreateConversationInput as CreateConversationVariables,
+} from '@/graphql/types/conversation'
 
 type ModalProps = {
   isOpen: boolean
@@ -43,7 +46,7 @@ const ConversationModal: React.FC<ModalProps> = ({isOpen, onClose}) => {
 
   const [createConversation, {loading: createConversationLoading}] = useMutation<
     CreateConversationData,
-    CreateConversationInput
+    CreateConversationVariables
   >(conversationOperations.Mutations.createConversation)
 
   function addPeople(user: SearchedUser) {
@@ -86,9 +89,9 @@ const ConversationModal: React.FC<ModalProps> = ({isOpen, onClose}) => {
       setPeople([])
       setUsername('')
       onClose()
-    } catch (error: unknown) {
+    } catch (error) {
       const message = getErrorMessage(error)
-      reportError(message)
+      reportError({message})
 
       toast.error(message)
     }

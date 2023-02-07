@@ -7,6 +7,7 @@ import {useRouter} from 'next/router'
 import React from 'react'
 
 import type {ConversationsData} from '@/graphql/types/conversation'
+import {BiArrowBack} from 'react-icons/bi'
 interface MessagesHeaderProps {
   userId: string
   conversationId: string
@@ -42,10 +43,10 @@ const MessagesHeader: React.FC<MessagesHeaderProps> = ({userId, conversationId})
       borderBottom="1px solid"
       borderColor="whiteAlpha.200"
     >
-      <Button display={{md: 'none'}} onClick={handleBackCLick}>
-        Back
+      <Button className="ml-2" display={{md: 'none'}} onClick={handleBackCLick}>
+        <BiArrowBack />
       </Button>
-      {loading && <SkeletonLoader count={1} height="30px" width="320px" />}
+      {loading && <SkeletonLoader count={2} height="30px" width="320px" />}
       {!conversation && !loading && <Text>Conversation Not Found</Text>}
       {conversation && (
         <Stack className="items-center" direction="row">

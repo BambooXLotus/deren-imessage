@@ -105,7 +105,11 @@ const resolvers = {
         const { pubsub } = context
 
         return pubsub.asyncIterator(['CONVERSATION_CREATED'])
-      }, (payload: ConversationCreatedSubscriptionPayload, _: any, context: GraphQLContext) => {
+      }, (
+        payload: ConversationCreatedSubscriptionPayload,
+        _: any,
+        context: GraphQLContext
+      ) => {
 
         const { session } = context
         const { conversationCreated: { users } } = payload

@@ -3,13 +3,14 @@ import { GraphQLError } from 'graphql';
 import { withFilter } from 'graphql-subscriptions';
 
 import { GraphQLContext } from '../../types/server';
-import { ConversationPopulated } from './../../types/conversation';
+import {
+  ConversationCreatedSubscriptionPayload,
+  ConversationDeletedSubscriptionPayload,
+  ConversationPopulated,
+  ConversationUpdatedSubscriptionPayload,
+} from './../../types/conversation';
 
 import type { CreateConversationResponse } from '../../types/conversation';
-
-export type ConversationCreatedSubscriptionPayload = {
-  conversationCreated: ConversationPopulated
-}
 
 const resolvers = {
   Query: {
@@ -40,12 +41,9 @@ const resolvers = {
           include: conversationPopulated
         })
 
-        const donkey = conversations.filter(
+        return conversations.filter(
           (conversation) => conversation.users.some((p) => p.userId === userId))
 
-        console.log(donkey)
-
-        return donkey
       } catch (error: any) {
         throw new GraphQLError(error?.message)
       }
@@ -93,7 +91,80 @@ const resolvers = {
         console.log(error)
         throw new GraphQLError(error?.message)
       }
-    }
+    },
+    markConversationRead: async (
+      _: any,
+      args: { userId: string, conversationId: string },
+      context: GraphQLContext
+    ): Promise<boolean> => {
+      const { userId, conversationId } = args;
+      const { session, prisma, pubsub } = context
+
+      if (!session?.user) {
+        throw new GraphQLError('Not Authorized')
+      }
+
+      const chatUser = await prisma.conversationUser.findFirst({
+        where: {
+          userId,
+          conversationId
+        }
+      })
+
+      if (!chatUser) {
+        throw new GraphQLError('Chat User not found')
+      }
+
+      await prisma.conversationUser.update({
+        where: {
+          id: chatUser.id,
+        },
+        data: {
+          hasSeenLatestMessage: true
+        }
+      })
+
+      return true
+    },
+    deleteConversation: async (
+      _: any,
+      args: { conversationId: string },
+      context: GraphQLContext
+    ): Promise<boolean> => {
+      const { conversationId } = args;
+      const { session, prisma, pubsub } = context
+
+      if (!session?.user) {
+        throw new GraphQLError('Not Authorized')
+      }
+
+      const deleteConversation = prisma.conversation.delete({
+        where: {
+          id: conversationId
+        },
+        include: conversationPopulated
+      })
+
+      const deleteConversationUser = prisma.conversationUser.deleteMany({
+        where: {
+          conversationId
+        }
+      })
+
+      const deleteMessages = prisma.message.deleteMany({
+        where: {
+          conversationId
+        }
+      })
+
+      const [deletedConversation] = await prisma.$transaction([deleteConversation, deleteConversationUser, deleteMessages])
+
+      pubsub.publish("CONVERSATION_DELETED", {
+        conversationDeleted: deletedConversation
+      })
+
+      return true
+    },
   },
   Subscription: {
     conversationCreated: {
@@ -112,13 +183,63 @@ const resolvers = {
       ) => {
 
         const { session } = context
-        const { conversationCreated: { users } } = payload
+        const { conversationCreated: { users: chatUsers } } = payload
 
-        const userInChat = users.some((user) => user.userId === session?.user?.id)
+        //USE utility function or just get rid of it because its a one liner
+        const userInChat = chatUsers.some((chatUser) => chatUser.user.id === session?.user?.id)
+        return userInChat
+      })
+    },
+    conversationUpdated: {
+      subscribe: withFilter((
+        _: any,
+        __: any,
+        context: GraphQLContext
+      ) => {
+        const { pubsub } = context
+        return pubsub.asyncIterator(['CONVERSATION_UPDATED'])
+      }, (
+        payload: ConversationUpdatedSubscriptionPayload,
+        _: any,
+        context: GraphQLContext
+      ) => {
 
-        console.log('users: ', users)
-        console.log('session user: ', session?.user?.id)
-        console.log('userInChat: ', userInChat)
+        const { session } = context
+
+        if (!session?.user) {
+          throw new GraphQLError('Not Authorized')
+        }
+
+        const { conversationUpdated: { conversation: { users: chatUsers } } } = payload
+
+        const userInChat = chatUsers.some((user) => user.userId === session?.user?.id)
+        return userInChat
+      })
+    },
+    conversationDeleted: {
+      subscribe: withFilter((
+        _: any,
+        __: any,
+        context: GraphQLContext
+      ) => {
+        const { pubsub } = context
+        return pubsub.asyncIterator(['CONVERSATION_DELETED'])
+      }, (
+        payload: ConversationDeletedSubscriptionPayload,
+        _: any,
+        context: GraphQLContext
+      ) => {
+        const { session } = context
+
+        if (!session?.user) {
+          throw new GraphQLError('Not Authorized')
+        }
+
+        const { id: userId } = session.user
+
+        const { conversationDeleted: { users: chatUsers } } = payload
+
+        const userInChat = chatUsers.some((user) => user.userId === userId)
         return userInChat
       })
     },

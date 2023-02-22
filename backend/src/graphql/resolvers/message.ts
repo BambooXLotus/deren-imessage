@@ -103,8 +103,6 @@ const resolvers = {
           throw new GraphQLError('Chat User does not exist')
         }
 
-        console.log("Conversation Update: ", args, senderId)
-
         const conversation = await prisma.conversation.update({
           where: {
             id: conversationId,
@@ -136,7 +134,7 @@ const resolvers = {
         })
 
         pubsub.publish("MESSAGE_SENT", { messageSent: newMessage })
-        // pubsub.publish("CONVERSATION_UPDATED", { conversationUpdated: { conversation } })
+        pubsub.publish("CONVERSATION_UPDATED", { conversationUpdated: { conversation } })
 
       } catch (error: any) {
         console.log('sendMessage: ', error)

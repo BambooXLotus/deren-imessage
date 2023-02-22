@@ -3,16 +3,18 @@ import {Avatar, Box, Flex, Menu, MenuItem, MenuList, Stack, Text} from '@chakra-
 import {useState} from 'react'
 import {AiOutlineEdit} from 'react-icons/ai'
 import {BiLogOut} from 'react-icons/bi'
+import {GoPrimitiveDot} from 'react-icons/go'
 import {MdDeleteOutline} from 'react-icons/md'
-
-import type {ConversationPopulated} from '../../../../../backend/src/types/conversation'
 import TimeAgo from 'react-timeago'
 
+import type {ConversationPopulated} from '../../../../../backend/src/types/conversation'
 type ConversationItemProps = {
   userId: string
   conversation: ConversationPopulated
   onClick: () => void
   isSelected: boolean
+  hasSeenLatestMessage: boolean
+  onDeleteConversation: (conversationId: string) => void
 }
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
@@ -20,6 +22,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   conversation,
   onClick,
   isSelected,
+  hasSeenLatestMessage,
+  onDeleteConversation,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -30,6 +34,10 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       event.preventDefault()
       setMenuOpen(true)
     }
+  }
+
+  function handleDeleteClick(conversationId: string) {
+    onDeleteConversation(conversationId)
   }
 
   return (
@@ -72,7 +80,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
               icon={<MdDeleteOutline fontSize={20} />}
               onClick={(event) => {
                 event.stopPropagation()
-                // onDeleteConversation(conversation.id);
+                handleDeleteClick(conversation.id)
               }}
             >
               Delete
@@ -80,11 +88,17 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           )}
         </MenuList>
       </Menu>
-      {/* <Flex position="absolute" left="-6px">
+      <Flex position="absolute" left="-6px">
         {hasSeenLatestMessage === false && (
-          <GoPrimitiveDot fontSize={18} color="#6B46C1" />
+          <>
+            <GoPrimitiveDot
+              className="absolute animate-ping fill-purple-600 text-lg"
+              fontSize={18}
+            />
+            <GoPrimitiveDot className="relative fill-purple-600 text-lg" fontSize={18} />
+          </>
         )}
-      </Flex> */}
+      </Flex>
       {conversation.latestMessage ? (
         <Avatar src={conversation.latestMessage.sender.image as string} />
       ) : (
@@ -111,7 +125,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           )}
         </Flex>
         <Text className="text-xs" color="whiteAlpha.700">
-          {/* {getChatDate(conversation.updatedAt)} */}
           <TimeAgo date={conversation.updatedAt}></TimeAgo>
         </Text>
       </Flex>

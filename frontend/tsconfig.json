@@ -17,9 +17,9 @@
     "noUncheckedIndexedAccess": true,
     "baseUrl": "./",
     "paths": {
+      "@/images/*": ["public/images/*"],
       "@/components/*": ["src/components/*"],
       "@/styles/*": ["scr/styles/*"],
-      "@/images/*": ["public/images/*"],
       "@/graphql/*": ["src/graphql/*"],
       "@/utils/*": ["src/utils/*"]
     }

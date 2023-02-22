@@ -1,36 +1,159 @@
+import SkeletonLoader from '@/components/common/SkeletonLoader'
 import ConversationOperations from '@/graphql/operations/conversation'
-import {useQuery} from '@apollo/client'
+import {gql, useMutation, useQuery, useSubscription} from '@apollo/client'
 import {Box} from '@chakra-ui/react'
+import {useRouter} from 'next/router'
+import {useEffect} from 'react'
 
 import ConversationList from './ConversationList'
 
 import type {Session} from 'next-auth'
-import type {ConversationsData} from '@/graphql/types/conversation'
+import type {
+  ConversationDeletedData,
+  ConversationsData,
+  ConversationUpdatedData,
+} from '@/graphql/types/conversation'
 
-import type {ConversationPopulated} from '../../../../../backend/src/types/conversation'
-import {useEffect} from 'react'
-import {useRouter} from 'next/router'
-import SkeletonLoader from '@/components/common/SkeletonLoader'
-
+import type {
+  ConversationPopulated,
+  ConversationUserPopulated,
+} from '../../../../../backend/src/types/conversation'
 type ConverationsWrapperProps = {
   session: Session
 }
 
 const ConverationsWrapper: React.FC<ConverationsWrapperProps> = ({session}) => {
   const {
-    data: conversationsData,
-    error: conversationsError,
-    loading: conversationsLoading,
-    subscribeToMore,
-  } = useQuery<ConversationsData, null>(ConversationOperations.Queries.conversations)
-  const {
     push,
     query: {conversationId},
   } = useRouter()
 
-  async function handleViewConversation(conversationId: string) {
+  const {
+    user: {id: userId},
+  } = session
+  const {
+    data: conversationsData,
+    loading: conversationsLoading,
+    subscribeToMore,
+  } = useQuery<ConversationsData, null>(ConversationOperations.Queries.conversations)
+
+  const [markConversationRead] = useMutation<
+    {markConversationRead: boolean},
+    {userId: string; conversationId: string}
+  >(ConversationOperations.Mutations.markConversationRead)
+
+  useSubscription<ConversationUpdatedData, null>(
+    ConversationOperations.Subscriptions.conversationUpdated,
+    {
+      onData: async ({client, data}) => {
+        const {data: subscriptionData} = data
+
+        if (!subscriptionData) return
+
+        const {
+          conversationUpdated: {conversation: updatedConversation},
+        } = subscriptionData
+
+        const currentConversation = updatedConversation.id === conversationId
+
+        if (currentConversation) {
+          await handleViewConversation(conversationId, false)
+        }
+      },
+    }
+  )
+
+  useSubscription<ConversationDeletedData, null>(
+    ConversationOperations.Subscriptions.conversationDeleted,
+    {
+      onData: async ({client, data}) => {
+        const {data: subscriptionData} = data
+
+        if (!subscriptionData) return
+
+        const existing = client.readQuery<ConversationsData>({
+          query: ConversationOperations.Queries.conversations,
+        })
+
+        if (!existing) return
+
+        const {conversations} = existing
+        const {
+          conversationDeleted: {id: deletedConversationId},
+        } = subscriptionData
+
+        client.writeQuery<ConversationsData>({
+          query: ConversationOperations.Queries.conversations,
+          data: {
+            conversations: conversations.filter(
+              (conversation) => conversation.id !== deletedConversationId
+            ),
+          },
+        })
+      },
+    }
+  )
+
+  async function handleViewConversation(conversationId: string, hasSeenLatestMessage: boolean) {
     await push({
       query: {conversationId},
+    })
+
+    if (hasSeenLatestMessage) return
+
+    await markConversationRead({
+      variables: {
+        userId,
+        conversationId,
+      },
+      optimisticResponse: {
+        markConversationRead: true,
+      },
+      update: (cache) => {
+        const chatUsersFragment = cache.readFragment<{chatUsers: ConversationUserPopulated[]}>({
+          id: `Conversation:${conversationId}`,
+          fragment: gql`
+            fragment ChatUsers on Conversation {
+              conversationUsers {
+                user {
+                  id
+                  username
+                }
+                hasSeenLatestMessage
+              }
+            }
+          `,
+        })
+
+        //TODO: NOT WORKING
+        console.log('chatUsersFragment:::::::::', chatUsersFragment)
+
+        if (!chatUsersFragment) return
+
+        const chatUsers = [...chatUsersFragment.chatUsers]
+        const chatUserIdx = chatUsers.findIndex((chatUser) => chatUser.user.id === userId)
+
+        if (chatUserIdx === -1) return
+
+        const chatUser = chatUsers[chatUserIdx]
+
+        chatUsers[chatUserIdx] = {
+          ...chatUser,
+          hasSeenLatestMessage: true,
+        }
+
+        cache.writeFragment({
+          id: `Conversation:${conversationId}`,
+          fragment: gql`
+            fragment UpdateChatUser on Conversation {
+              conversationUser
+            }
+          `,
+          data: {
+            chatUsers,
+          },
+        })
+      },
     })
   }
 
@@ -60,6 +183,8 @@ const ConverationsWrapper: React.FC<ConverationsWrapperProps> = ({session}) => {
     })
   }
 
+  // function subscribeTo
+
   useEffect(() => {
     subscribeToNewConversations()
   }, [])
@@ -77,7 +202,7 @@ const ConverationsWrapper: React.FC<ConverationsWrapperProps> = ({session}) => {
         <ConversationList
           session={session}
           conversations={conversationsData?.conversations || []}
-          onViewConversation={handleViewConversation}
+          onViewConversation={() => handleViewConversation}
         />
       )}
     </Box>

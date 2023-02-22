@@ -12,6 +12,14 @@ const typeDefs = gql`
     createConversation(userIds: [String]): CreateConversationResponse
   }
 
+  type Mutation {
+    markConversationRead(userId: String!, conversationId: String!): Boolean
+  }
+
+  type Mutation {
+    deleteConversation(conversationId: String!): Boolean
+  }
+
   type Conversation {
     id: String
     latestMessage: Message
@@ -32,6 +40,22 @@ const typeDefs = gql`
 
   type Subscription {
     conversationCreated: Conversation
+  }
+
+  type ConversationUpdatedSubscriptionPayload {
+    conversation: Conversation
+  }
+
+  type Subscription {
+    conversationUpdated: ConversationUpdatedSubscriptionPayload
+  }
+
+  type ConversationDeletedSubscriptionPayload {
+    id: String
+  }
+
+  type Subscription {
+    conversationDeleted: ConversationDeletedSubscriptionPayload
   }
 `
 

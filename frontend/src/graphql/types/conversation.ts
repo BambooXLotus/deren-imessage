@@ -13,3 +13,15 @@ export type CreateConversationData = {
 export type ConversationsData = {
   conversations: ConversationPopulated[]
 }
+
+export type ConversationUpdatedData = {
+  conversationUpdated: {
+    conversation: ConversationPopulated
+  }
+}
+
+export type ConversationDeletedData = {
+  conversationDeleted: {
+    id: string
+  }
+}

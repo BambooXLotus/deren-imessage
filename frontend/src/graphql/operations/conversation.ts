@@ -10,7 +10,7 @@ const ConversationFields = `
       username
       image
     }
-    
+    hasSeenLatestMessage
   }
   latestMessage {
     ${MessageFields}
@@ -36,6 +36,16 @@ const conversationOperations = {
           conversationId
         }
       }
+    `,
+    deleteConversation: gql`
+      mutation DeleteConversation($conversationId: String!) {
+        deleteConversation(conversationId: $conversationId)
+      }
+    `,
+    markConversationRead: gql`
+      mutation MarkConversationRead($userId: String!, $conversationId: String!) {
+        markConversationRead(userId: $userId, conversationId: $conversationId) 
+      }
     `
   },
   Subscriptions: {
@@ -43,6 +53,22 @@ const conversationOperations = {
       subscription ConversationCreated {
         conversationCreated {
           ${ConversationFields}
+        }
+      }
+    `,
+    conversationUpdated: gql`
+      subscription ConversationUpdated {
+        conversationUpdated {
+          conversations {
+            ${ConversationFields}
+          }
+        }
+      }
+    `,
+    conversationDeleted: gql`
+      subscription ConversationDeleted {
+        conversationDeleted {
+          id
         }
       }
     `
